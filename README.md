@@ -294,9 +294,11 @@ You can download the pre-compiled production Android APK directly from the GitHu
 
 ---
 
-## 👤 Author
+## 👥 Authors
 
-Developed by **[Moulendra Balaji](https://github.com/MoulendraBalaji)**
+Developed by:
+- **[Moulendra Balaji](https://github.com/MoulendraBalaji)**
+- **[Shashvat Reddy](https://github.com/pshashvatreddy)**
 
 ---
 
