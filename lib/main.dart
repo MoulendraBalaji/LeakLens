@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'screens/home_screen.dart';
 import 'theme/terminal_theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Air-gapped guarantee: prevent google_fonts from attempting network requests
+  GoogleFonts.config.allowRuntimeFetching = false;
 
   // Set immersive dark system navigation bar and status bar styling
   SystemChrome.setSystemUIOverlayStyle(
