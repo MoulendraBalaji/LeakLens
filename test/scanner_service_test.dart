@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:leak_lens/models/finding.dart';
+import 'package:leak_lens/services/ocr_text_cleaner.dart';
 import 'package:leak_lens/services/scanner_service.dart';
 
 void main() {
@@ -128,6 +129,19 @@ APP_NAME=my_awesome_application
       expect(findings.first.matchedText, equals('z9#kL2!vP0@xQ8^mC4&wR1'));
     });
 
+    test('Captures full DB password that contains @ characters', () {
+      const text =
+          'DATABASE_URL=postgres://app_user:z9#kL2!vP0@xQ8^mC4&wR1@db.internal:5432/main';
+      final findings = scanner.scanText(text);
+      final db = findings.firstWhere((f) => f.type == 'Database Password');
+      expect(db.matchedText, equals('z9#kL2!vP0@xQ8^mC4&wR1'));
+
+      // The full password must be redacted — not only the prefix until the @
+      final redactedDoc = scanner.generateRedactedDocument(text, findings);
+      expect(redactedDoc.contains('z9#kL2!vP0@xQ8^mC4&wR1'), isFalse);
+      expect(redactedDoc.contains('kL2!vP0'), isFalse);
+    });
+
     test('Does not flag low-entropy standard variables', () {
       const text = '''
 APP_DEBUG=true
@@ -159,6 +173,30 @@ PORT=3000
       expect(redactedDoc.contains('AKIA••••••••••••MPLE'), isTrue);
       expect(redactedDoc.contains(Finding.redactSnippet('ghp_123456789012345678901234567890123456')), isTrue);
       expect(redactedDoc.contains('PORT=3000'), isTrue);
+    });
+  });
+
+  group('OCR Text Cleaner', () {
+    test('strips invisible OCR artifacts while preserving content', () {
+      const raw = 'AWS_SECRET\u00ad_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY \u200b\n';
+      final cleaned = OcrTextCleaner.clean(raw);
+      expect(cleaned.contains('\u00ad'), isFalse);
+      expect(cleaned.contains('\u200b'), isFalse);
+      expect(cleaned.contains('AWS_SECRET_ACCESS_KEY'), isTrue);
+      expect(cleaned.contains('wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'), isTrue);
+      expect(cleaned.endsWith('\n '), isFalse);
+    });
+
+    test('normalises non-breaking spaces to regular spaces', () {
+      const raw = 'ghp_\u00a0abc123';
+      expect(OcrTextCleaner.clean(raw), equals('ghp_ abc123'));
+    });
+
+    test('cleaned OCR output still detects secrets', () {
+      const raw = '${'TOKEN\u00ad='}ghp_123456789012345678901234567890123456 \u200b';
+      final cleaned = OcrTextCleaner.clean(raw);
+      final findings = ScannerService.instance.scanText(cleaned);
+      expect(findings.any((f) => f.type.contains('GitHub')), isTrue);
     });
   });
 }

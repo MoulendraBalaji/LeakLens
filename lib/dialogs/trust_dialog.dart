@@ -1,173 +1,148 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../theme/terminal_theme.dart';
+import '../theme/neo_theme.dart';
 
-/// Apple & Pixel-inspired modal sheet explaining LeakLens's air-gapped security guarantees.
+/// Neo-brutalist air-gap security guarantee dialog.
 class TrustDialog extends StatelessWidget {
   const TrustDialog({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final c = NeoColors.of(context);
+
     return Dialog(
-      backgroundColor: Colors.transparent,
+      backgroundColor: c.surface,
       elevation: 0,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
-          child: Container(
-            padding: const EdgeInsets.all(22),
-            decoration: BoxDecoration(
-              color: const Color(0xF0111622),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: const Color(0x5906B6D4),
-                width: 1.2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.6),
-                  blurRadius: 30,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(0),
+        side: BorderSide(color: c.border, width: NeoTheme.borderWidth),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(
+          color: c.surface,
+          boxShadow: [NeoTheme.hardShadow(c.shadow, offset: const Offset(8, 8))],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header slab
+            Row(
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: TerminalTheme.safeGreen.withValues(alpha: 0.18),
-                        border: Border.all(
-                          color: TerminalTheme.safeGreen.withValues(alpha: 0.5),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: c.green,
+                    borderRadius: BorderRadius.circular(0),
+                    border: Border.all(color: c.border, width: 2.5),
+                  ),
+                  child: Icon(
+                    Icons.verified_user_rounded,
+                    color: c.border,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'AIR-GAPPED',
+                        style: NeoTheme.fontDisplay(
+                          fontSize: 20,
+                          color: c.textBright,
                         ),
                       ),
-                      child: const Icon(
-                        Icons.verified_user_rounded,
-                        color: TerminalTheme.safeGreen,
-                        size: 20,
+                      Text(
+                        '100% ON-DEVICE — ZERO NETWORK',
+                        style: NeoTheme.fontMono(
+                          fontSize: 10,
+                          color: c.textSecondary,
+                          letterSpacing: 0.6,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Air-Gapped Security',
-                            style: TerminalTheme.fontSans(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: TerminalTheme.textBright,
-                            ),
-                          ),
-                          Text(
-                            '100% On-Device • Zero Network Calls',
-                            style: TerminalTheme.fontMono(
-                              fontSize: 10,
-                              color: TerminalTheme.safeGreenSoft,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'LeakLens is engineered with verifiable cryptographic and operating system-level guarantees:',
-                  style: TerminalTheme.fontSans(
-                    fontSize: 12.5,
-                    height: 1.4,
-                    color: TerminalTheme.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _buildAuditItem(
-                  icon: Icons.wifi_off_rounded,
-                  title: 'Zero Network Permissions',
-                  description:
-                      'android.permission.INTERNET is completely absent from AndroidManifest.xml. The OS physically rejects any network calls.',
-                ),
-                const SizedBox(height: 12),
-                _buildAuditItem(
-                  icon: Icons.memory_rounded,
-                  title: 'Ephemeral In-Memory Only',
-                  description:
-                      'No local databases (no SQLite, no Hive, no SharedPreferences). All scanned text and findings vanish when the app closes.',
-                ),
-                const SizedBox(height: 12),
-                _buildAuditItem(
-                  icon: Icons.document_scanner_rounded,
-                  title: 'On-Device ML Kit OCR',
-                  description:
-                      'Camera text recognition runs locally on your device hardware using Google ML Kit Latin model. Zero server roundtrips.',
-                ),
-                const SizedBox(height: 12),
-                _buildAuditItem(
-                  icon: Icons.shield_rounded,
-                  title: 'No Analytics or Trackers',
-                  description:
-                      'No Firebase Analytics, Crashlytics, telemetry, or remote advertising SDKs.',
-                ),
-                const SizedBox(height: 22),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: FilledButton(
-                    onPressed: () {
-                      HapticFeedback.lightImpact();
-                      Navigator.of(context).pop();
-                    },
-                    style: FilledButton.styleFrom(
-                      backgroundColor: TerminalTheme.safeGreen,
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      'Done',
-                      style: TerminalTheme.fontSans(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
+            const SizedBox(height: 18),
+            Text(
+              'LeakLens is designed with verifiable on-device-only guarantees:',
+              style: NeoTheme.fontSans(
+                fontSize: 13,
+                height: 1.4,
+                color: c.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _auditItem(c, Icons.wifi_off_rounded, 'Zero Network Permissions',
+                'android.permission.INTERNET is absent from AndroidManifest.xml. The OS physically blocks any network calls.'),
+            const SizedBox(height: 12),
+            _auditItem(c, Icons.memory_rounded, 'Ephemeral In-Memory Only',
+                'No databases, no Hive, no room. All scanned text and findings vanish when the app closes.'),
+            const SizedBox(height: 12),
+            _auditItem(c, Icons.document_scanner_rounded, 'On-Device ML Kit OCR',
+                'Camera text recognition runs entirely on your hardware via Google ML Kit Latin model. Zero roundtrips.'),
+            const SizedBox(height: 12),
+            _auditItem(c, Icons.phonelink_off_rounded, 'No Analytics or Trackers',
+                'No Firebase Analytics, Crashlytics, telemetry, or advertising SDKs present.'),
+            const SizedBox(height: 12),
+            _auditItem(c, Icons.lock_outline_rounded, 'Minimal Storage',
+                'Only your theme preference (light/dark) is stored locally via SharedPreferences. No secrets are ever saved.'),
+            const SizedBox(height: 22),
+            Align(
+              alignment: Alignment.centerRight,
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  Navigator.of(context).pop();
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: c.green,
+                    borderRadius: BorderRadius.circular(0),
+                    border: Border.all(color: c.border, width: 2.5),
+                    boxShadow: [
+                      NeoTheme.hardShadow(c.border, offset: const Offset(3, 3)),
+                    ],
+                  ),
+                  child: Text(
+                    'DONE',
+                    style: NeoTheme.fontSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: c.border,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildAuditItem({
-    required IconData icon,
-    required String title,
-    required String description,
-  }) {
+  static Widget _auditItem(
+      NeoColors c, IconData icon, String title, String description) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: const Color(0x1F06B6D4),
-            borderRadius: BorderRadius.circular(8),
+            color: c.cyan,
+            borderRadius: BorderRadius.circular(0),
+            border: Border.all(color: c.border, width: 2),
           ),
-          child: Icon(icon, size: 16, color: TerminalTheme.infoBlue),
+          child: Icon(icon, size: 16, color: c.border),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -176,19 +151,19 @@ class TrustDialog extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: TerminalTheme.fontSans(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: TerminalTheme.textBright,
+                style: NeoTheme.fontSans(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: c.textBright,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 description,
-                style: TerminalTheme.fontSans(
+                style: NeoTheme.fontSans(
                   fontSize: 11.5,
                   height: 1.4,
-                  color: TerminalTheme.textSecondary,
+                  color: c.textSecondary,
                 ),
               ),
             ],

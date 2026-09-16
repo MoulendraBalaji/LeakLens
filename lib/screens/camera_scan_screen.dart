@@ -5,15 +5,17 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../models/finding.dart';
+import '../services/image_preprocessor.dart';
 import '../services/ocr_service.dart';
+import '../services/ocr_text_cleaner.dart';
 import '../services/scanner_service.dart';
-import '../theme/terminal_theme.dart';
+import '../theme/neo_theme.dart';
 import '../widgets/finding_card.dart';
 import '../widgets/status_banner.dart';
 
 /// Camera capture and OCR scanning screen.
-/// Snaps a photo of a screen/terminal, extracts text via Google ML Kit on-device,
-/// and runs it through the ScannerService.
+/// Snaps a photo of a screen/terminal, preprocesses for contrast, extracts text
+/// via Google ML Kit on-device, cleans OCR output and runs it through the ScannerService.
 class CameraScanScreen extends StatefulWidget {
   final Function(String extractedText)? onSendToPasteEditor;
 
@@ -34,7 +36,6 @@ class _CameraScanScreenState extends State<CameraScanScreen>
   bool _isProcessingOcr = false;
   String? _ocrError;
 
-  // Scan results state
   String? _capturedImagePath;
   String? _extractedText;
   List<Finding> _findings = [];
@@ -57,9 +58,7 @@ class _CameraScanScreenState extends State<CameraScanScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (_cameraController == null || !_cameraController!.value.isInitialized) {
-      return;
-    }
+    if (_cameraController == null || !_cameraController!.value.isInitialized) return;
     if (state == AppLifecycleState.inactive) {
       _cameraController?.dispose();
     } else if (state == AppLifecycleState.resumed) {
@@ -79,32 +78,23 @@ class _CameraScanScreenState extends State<CameraScanScreen>
         }
         return;
       }
-
-      setState(() {
-        _isCameraPermissionGranted = true;
-      });
-
+      setState(() => _isCameraPermissionGranted = true);
       _availableCameras = await availableCameras();
       if (_availableCameras.isEmpty) {
         if (mounted) {
           setState(() {
-            _ocrError =
-                'No camera hardware found on this device. You can import screenshots using the gallery button below.';
+            _ocrError = 'No camera found. Import screenshots via the gallery button below.';
           });
         }
         return;
       }
-
       final camera = _availableCameras[_selectedCameraIndex];
       _cameraController = CameraController(
         camera,
-        ResolutionPreset.high,
+        ResolutionPreset.veryHigh,
         enableAudio: false,
-        imageFormatGroup: Platform.isAndroid
-            ? ImageFormatGroup.nv21
-            : ImageFormatGroup.bgra8888,
+        imageFormatGroup: Platform.isAndroid ? ImageFormatGroup.nv21 : ImageFormatGroup.bgra8888,
       );
-
       await _cameraController!.initialize();
       if (mounted) {
         setState(() {
@@ -116,17 +106,14 @@ class _CameraScanScreenState extends State<CameraScanScreen>
       debugPrint('Camera init error: $e');
       if (mounted) {
         setState(() {
-          _ocrError =
-              'Unable to initialize camera. You can still test OCR using the gallery button.';
+          _ocrError = 'Unable to initialize camera. You can still test OCR using the gallery button.';
         });
       }
     }
   }
 
   Future<void> _toggleFlash() async {
-    if (_cameraController == null || !_cameraController!.value.isInitialized) {
-      return;
-    }
+    if (_cameraController == null || !_cameraController!.value.isInitialized) return;
     try {
       HapticFeedback.selectionClick();
       if (_isFlashOn) {
@@ -136,78 +123,63 @@ class _CameraScanScreenState extends State<CameraScanScreen>
         await _cameraController!.setFlashMode(FlashMode.torch);
         setState(() => _isFlashOn = true);
       }
-    } catch (e) {
-      debugPrint('Flash toggle error: $e');
-    }
+    } catch (_) {}
   }
 
   Future<void> _switchCamera() async {
     if (_availableCameras.length <= 1) return;
     HapticFeedback.selectionClick();
-    _selectedCameraIndex =
-        (_selectedCameraIndex + 1) % _availableCameras.length;
+    _selectedCameraIndex = (_selectedCameraIndex + 1) % _availableCameras.length;
     await _cameraController?.dispose();
     _cameraController = null;
-    setState(() {
-      _isCameraInitialized = false;
-    });
+    setState(() => _isCameraInitialized = false);
     await _initCamera();
   }
 
   Future<void> _captureAndScan() async {
-    if (_cameraController == null ||
-        !_cameraController!.value.isInitialized ||
-        _isProcessingOcr) {
-      return;
-    }
-
+    if (_cameraController == null || !_cameraController!.value.isInitialized || _isProcessingOcr) return;
     try {
       HapticFeedback.mediumImpact();
-      setState(() {
-        _isProcessingOcr = true;
-        _ocrError = null;
-      });
-
+      setState(() { _isProcessingOcr = true; _ocrError = null; });
       final xFile = await _cameraController!.takePicture();
       await _processImageWithOcr(xFile.path);
     } catch (e) {
       debugPrint('Capture error: $e');
-      if (mounted) {
-        setState(() {
-          _isProcessingOcr = false;
-          _ocrError = 'Failed to capture photo: $e';
-        });
-      }
+      if (mounted) setState(() { _isProcessingOcr = false; _ocrError = 'Failed to capture photo: $e'; });
     }
   }
 
   Future<void> _pickImageFromGallery() async {
     try {
       HapticFeedback.selectionClick();
-      final xFile =
-          await _imagePicker.pickImage(source: ImageSource.gallery);
+      final xFile = await _imagePicker.pickImage(source: ImageSource.gallery);
       if (xFile != null) {
-        setState(() {
-          _isProcessingOcr = true;
-          _ocrError = null;
-        });
+        setState(() { _isProcessingOcr = true; _ocrError = null; });
         await _processImageWithOcr(xFile.path);
       }
     } catch (e) {
       debugPrint('Gallery picker error: $e');
-      if (mounted) {
-        setState(() {
-          _isProcessingOcr = false;
-          _ocrError = 'Failed to load image: $e';
-        });
-      }
+      if (mounted) setState(() { _isProcessingOcr = false; _ocrError = 'Failed to load image: $e'; });
     }
   }
 
   Future<void> _processImageWithOcr(String imagePath) async {
     try {
-      final text =
-          await OcrService.instance.extractTextFromImagePath(imagePath);
+      // Step 1: enhance contrast for terminal/screen captures
+      var processedPath = imagePath;
+      try {
+        processedPath = await ImagePreprocessor.enhanceForOcr(imagePath);
+      } catch (_) {
+        // fallback to original if preprocessing fails
+      }
+
+      // Step 2: OCR
+      final rawText = await OcrService.instance.extractTextFromImagePath(processedPath);
+
+      // Step 3: clean OCR artifacts (invisible chars, trailing whitespace)
+      final text = OcrTextCleaner.clean(rawText);
+
+      // Step 4: scan
       final detectedFindings = ScannerService.instance.scanText(text);
 
       if (mounted) {
@@ -220,12 +192,7 @@ class _CameraScanScreenState extends State<CameraScanScreen>
       }
     } catch (e) {
       debugPrint('OCR extraction error: $e');
-      if (mounted) {
-        setState(() {
-          _isProcessingOcr = false;
-          _ocrError = 'On-device OCR failed: $e';
-        });
-      }
+      if (mounted) setState(() { _isProcessingOcr = false; _ocrError = 'On-device OCR failed: $e'; });
     }
   }
 
@@ -241,35 +208,25 @@ class _CameraScanScreenState extends State<CameraScanScreen>
 
   @override
   Widget build(BuildContext context) {
-    if (_extractedText != null) {
-      return _buildResultsView();
-    }
+    if (_extractedText != null) return _buildResultsView();
     return _buildCameraView();
   }
 
   Widget _buildCameraView() {
+    final c = NeoColors.of(context);
     return Column(
       children: [
-        // Camera Viewfinder Box
+        // Viewfinder
         Expanded(
           child: Container(
-            margin: const EdgeInsets.fromLTRB(18, 10, 18, 12),
+            margin: const EdgeInsets.fromLTRB(14, 8, 14, 10),
             decoration: BoxDecoration(
               color: Colors.black,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: TerminalTheme.borderAccent.withValues(alpha: 0.5),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: TerminalTheme.borderAccent.withValues(alpha: 0.1),
-                  blurRadius: 18,
-                  spreadRadius: 1,
-                ),
-              ],
+              borderRadius: BorderRadius.circular(0),
+              border: Border.all(color: c.yellow, width: 3),
+              boxShadow: [NeoTheme.hardShadow(c.shadow, offset: const Offset(6, 6))],
             ),
-            clipBehavior: Clip.antiAlias,
+            clipBehavior: Clip.hardEdge,
             child: Stack(
               fit: StackFit.expand,
               children: [
@@ -287,25 +244,21 @@ class _CameraScanScreenState extends State<CameraScanScreen>
                                 ? Icons.videocam_off_rounded
                                 : Icons.no_photography_rounded,
                             size: 48,
-                            color: TerminalTheme.textSecondary,
+                            color: c.textSecondary,
                           ),
                           const SizedBox(height: 14),
                           Text(
                             _ocrError ?? 'Initializing on-device camera...',
                             textAlign: TextAlign.center,
-                            style: TerminalTheme.fontSans(
-                              fontSize: 13,
-                              color: TerminalTheme.textSecondary,
-                            ),
+                            style: NeoTheme.fontSans(fontSize: 13, color: c.textSecondary),
                           ),
                           if (!_isCameraPermissionGranted) ...[
                             const SizedBox(height: 14),
-                            FilledButton.tonal(
-                              onPressed: openAppSettings,
-                              child: Text(
-                                'Grant Camera Permission',
-                                style: TerminalTheme.fontSans(fontSize: 12),
-                              ),
+                            GestureDetector(
+                              onTap: openAppSettings,
+                              child: NeoTheme.sticker(context,
+                                  text: 'GRANT PERMISSION',
+                                  color: c.yellow, fontSize: 10),
                             ),
                           ],
                         ],
@@ -313,41 +266,51 @@ class _CameraScanScreenState extends State<CameraScanScreen>
                     ),
                   ),
 
-                // Terminal HUD Overlay
                 _buildHudOverlay(),
 
-                // Processing Spinner Overlay
+                // Processing overlay
                 if (_isProcessingOcr)
                   Container(
-                    color: Colors.black.withValues(alpha: 0.85),
+                    color: Colors.black.withValues(alpha: 0.88),
                     child: Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const SizedBox(
-                            width: 36,
-                            height: 36,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 3,
-                              color: TerminalTheme.safeGreen,
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: c.yellow,
+                              borderRadius: BorderRadius.circular(0),
+                              border: Border.all(color: c.border, width: 3),
+                              boxShadow: [NeoTheme.hardShadow(c.border, offset: const Offset(6, 6))],
                             ),
-                          ),
-                          const SizedBox(height: 18),
-                          Text(
-                            'EXTRACTING TEXT VIA ML KIT',
-                            style: TerminalTheme.fontMono(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: TerminalTheme.safeGreen,
-                              letterSpacing: 1.0,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            '100% on-device • Zero network calls',
-                            style: TerminalTheme.fontSans(
-                              fontSize: 12,
-                              color: TerminalTheme.textSecondary,
+                            child: Column(
+                              children: [
+                                const SizedBox(
+                                  width: 30, height: 30,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 3, color: Colors.black,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'EXTRACTING TEXT',
+                                  style: NeoTheme.fontDisplay(
+                                    fontSize: 18,
+                                    color: Colors.black,
+                                    letterSpacing: 0.4,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '100% on-device · ML Kit · Zero network',
+                                  style: NeoTheme.fontMono(
+                                    fontSize: 10,
+                                    color: const Color(0x99000000),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -359,80 +322,59 @@ class _CameraScanScreenState extends State<CameraScanScreen>
           ),
         ),
 
-        // Floating Action Controls Bar (padded above the 64px floating nav bar)
+        // Bottom controls
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 6, 24, 96),
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 96),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              // Flash Toggle
-              IconButton(
-                tooltip: 'Flashlight',
-                icon: Icon(
-                  _isFlashOn
-                      ? Icons.flash_on_rounded
-                      : Icons.flash_off_rounded,
-                  color: _isFlashOn
-                      ? TerminalTheme.warningAmber
-                      : TerminalTheme.textSecondary,
-                ),
-                onPressed: _isCameraInitialized ? _toggleFlash : null,
-              ),
-
-              // Capture Shutter Button
+              // Flash
               GestureDetector(
-                onTap: _isCameraInitialized && !_isProcessingOcr
-                    ? _captureAndScan
-                    : null,
+                onTap: _isCameraInitialized ? _toggleFlash : null,
                 child: Container(
-                  width: 72,
-                  height: 72,
+                  width: 48, height: 48,
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: TerminalTheme.safeGreen,
-                      width: 3.5,
-                    ),
-                    color: _isCameraInitialized
-                        ? TerminalTheme.safeGreen.withValues(alpha: 0.15)
-                        : Colors.transparent,
-                    boxShadow: [
-                      BoxShadow(
-                        color: TerminalTheme.safeGreen.withValues(alpha: 0.2),
-                        blurRadius: 16,
-                        spreadRadius: 2,
-                      ),
-                    ],
+                    color: _isFlashOn ? c.yellow : c.surface,
+                    borderRadius: BorderRadius.circular(0),
+                    border: Border.all(color: c.border, width: 2.5),
+                    boxShadow: [NeoTheme.hardShadow(c.border, offset: const Offset(3, 3))],
                   ),
-                  child: Center(
-                    child: Container(
-                      width: 54,
-                      height: 54,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _isCameraInitialized
-                            ? TerminalTheme.safeGreen
-                            : TerminalTheme.textSecondary.withValues(alpha: 0.3),
-                      ),
-                      child: const Icon(
-                        Icons.camera_alt_rounded,
-                        color: Colors.black,
-                        size: 26,
-                      ),
-                    ),
+                  child: Icon(
+                    _isFlashOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
+                    color: _isFlashOn ? c.border : c.textSecondary,
+                    size: 22,
                   ),
                 ),
               ),
 
-              // Gallery Fallback / Switch Camera
+              // Shutter
+              GestureDetector(
+                onTap: _isCameraInitialized && !_isProcessingOcr ? _captureAndScan : null,
+                child: Container(
+                  width: 76, height: 76,
+                  decoration: BoxDecoration(
+                    color: c.yellow,
+                    borderRadius: BorderRadius.circular(0),
+                    border: Border.all(color: c.border, width: 4),
+                    boxShadow: [NeoTheme.hardShadow(c.border, offset: const Offset(6, 6))],
+                  ),
+                  child: Icon(Icons.camera_alt_rounded, color: Colors.black, size: 32),
+                ),
+              ),
+
+              // More menu
               PopupMenuButton<String>(
-                color: TerminalTheme.surface,
                 tooltip: 'Import or switch',
-                icon: const Icon(Icons.more_horiz_rounded,
-                    color: TerminalTheme.textPrimary),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  side: const BorderSide(color: TerminalTheme.border),
+                color: c.surface,
+                icon: Container(
+                  width: 48, height: 48,
+                  decoration: BoxDecoration(
+                    color: c.surface,
+                    borderRadius: BorderRadius.circular(0),
+                    border: Border.all(color: c.border, width: 2.5),
+                    boxShadow: [NeoTheme.hardShadow(c.border, offset: const Offset(3, 3))],
+                  ),
+                  child: Icon(Icons.more_horiz_rounded, color: c.textBright, size: 22),
                 ),
                 onSelected: (val) {
                   if (val == 'gallery') {
@@ -444,32 +386,20 @@ class _CameraScanScreenState extends State<CameraScanScreen>
                 itemBuilder: (ctx) => [
                   PopupMenuItem(
                     value: 'gallery',
-                    child: Row(
-                      children: [
-                        const Icon(Icons.photo_library_rounded,
-                            size: 16, color: TerminalTheme.infoBlue),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Import Screenshot',
-                          style: TerminalTheme.fontSans(fontSize: 13),
-                        ),
-                      ],
-                    ),
+                    child: Row(children: [
+                      Icon(Icons.photo_library_rounded, size: 16, color: c.cyan),
+                      const SizedBox(width: 8),
+                      Text('Import Screenshot', style: NeoTheme.fontSans(fontSize: 13, color: c.textBright)),
+                    ]),
                   ),
                   if (_availableCameras.length > 1)
                     PopupMenuItem(
                       value: 'switch',
-                      child: Row(
-                        children: [
-                          const Icon(Icons.flip_camera_android_rounded,
-                              size: 16, color: TerminalTheme.textSecondary),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Switch Camera',
-                            style: TerminalTheme.fontSans(fontSize: 13),
-                          ),
-                        ],
-                      ),
+                      child: Row(children: [
+                        Icon(Icons.flip_camera_android_rounded, size: 16, color: c.textSecondary),
+                        const SizedBox(width: 8),
+                        Text('Switch Camera', style: NeoTheme.fontSans(fontSize: 13, color: c.textBright)),
+                      ]),
                     ),
                 ],
               ),
@@ -481,86 +411,33 @@ class _CameraScanScreenState extends State<CameraScanScreen>
   }
 
   Widget _buildHudOverlay() {
+    final c = NeoColors.of(context);
     return IgnorePointer(
       child: Stack(
         children: [
+          // Top hint
           Positioned(
-            top: 16,
-            left: 16,
-            right: 16,
-            child: Row(
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.75),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: TerminalTheme.safeGreen.withValues(alpha: 0.5),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: TerminalTheme.safeGreen,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'ALIGN TERMINAL OR SCREEN',
-                        style: TerminalTheme.fontMono(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w700,
-                          color: TerminalTheme.safeGreen,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            top: 14, left: 14, right: 14,
+            child: NeoTheme.sticker(context,
+                text: 'ALIGN TERMINAL OR SCREEN',
+                color: c.yellow, fg: c.border, fontSize: 10,
+                icon: Icons.center_focus_strong_rounded),
           ),
 
-          // Center Alignment Frame with Glowing Reticle
+          // Reticle frame
           Center(
             child: Container(
-              margin: const EdgeInsets.all(32),
+              margin: const EdgeInsets.all(36),
               decoration: BoxDecoration(
-                border: Border.all(
-                  color: TerminalTheme.safeGreen.withValues(alpha: 0.4),
-                  width: 1.5,
-                ),
-                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: c.yellow.withValues(alpha: 0.7), width: 2),
+                borderRadius: BorderRadius.circular(0),
               ),
               child: Stack(
                 children: [
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    child: _buildCornerBracket(isTop: true, isLeft: true),
-                  ),
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: _buildCornerBracket(isTop: true, isLeft: false),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    child: _buildCornerBracket(isTop: false, isLeft: true),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: _buildCornerBracket(isTop: false, isLeft: false),
-                  ),
+                  _cornerBracket(c.yellow, isTop: true, isLeft: true),
+                  Positioned(top: 0, right: 0, child: _cornerBracket(c.yellow, isTop: true, isLeft: false)),
+                  Positioned(bottom: 0, left: 0, child: _cornerBracket(c.yellow, isTop: false, isLeft: true)),
+                  Positioned(bottom: 0, right: 0, child: _cornerBracket(c.yellow, isTop: false, isLeft: false)),
                 ],
               ),
             ),
@@ -570,147 +447,96 @@ class _CameraScanScreenState extends State<CameraScanScreen>
     );
   }
 
-  Widget _buildCornerBracket({required bool isTop, required bool isLeft}) {
-    return Container(
-      width: 20,
-      height: 20,
-      decoration: BoxDecoration(
-        border: Border(
-          top: isTop
-              ? const BorderSide(color: TerminalTheme.safeGreen, width: 3.5)
-              : BorderSide.none,
-          bottom: !isTop
-              ? const BorderSide(color: TerminalTheme.safeGreen, width: 3.5)
-              : BorderSide.none,
-          left: isLeft
-              ? const BorderSide(color: TerminalTheme.safeGreen, width: 3.5)
-              : BorderSide.none,
-          right: !isLeft
-              ? const BorderSide(color: TerminalTheme.safeGreen, width: 3.5)
-              : BorderSide.none,
+  Widget _cornerBracket(Color color, {required bool isTop, required bool isLeft}) {
+    return SizedBox(
+      width: 22, height: 22,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(
+            top: isTop ? BorderSide(color: color, width: 4) : BorderSide.none,
+            bottom: !isTop ? BorderSide(color: color, width: 4) : BorderSide.none,
+            left: isLeft ? BorderSide(color: color, width: 4) : BorderSide.none,
+            right: !isLeft ? BorderSide(color: color, width: 4) : BorderSide.none,
+          ),
         ),
       ),
     );
   }
 
   Widget _buildResultsView() {
+    final c = NeoColors.of(context);
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 110),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 110),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Live Status Banner
-          StatusBanner(
-            findings: _findings,
-            isScanning: false,
-          ),
+          StatusBanner(findings: _findings, isScanning: false),
+          const SizedBox(height: 14),
 
-          const SizedBox(height: 16),
-
-          // Action Toolbar: Rescan, Send to Editor
+          // Action bar
           Row(
             children: [
-              OutlinedButton.icon(
-                onPressed: _resetScan,
-                icon: const Icon(Icons.replay_rounded, size: 16),
-                label: Text(
-                  'Scan Another',
-                  style: TerminalTheme.fontSans(fontSize: 12.5),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: TerminalTheme.textPrimary,
-                  side: const BorderSide(color: TerminalTheme.border),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                ),
+              GestureDetector(
+                onTap: _resetScan,
+                child: NeoTheme.sticker(context,
+                    text: 'SCAN ANOTHER',
+                    icon: Icons.replay_rounded, fontSize: 11),
               ),
               const Spacer(),
-              if (widget.onSendToPasteEditor != null &&
-                  _extractedText != null) ...[
-                FilledButton.icon(
-                  onPressed: () {
+              if (widget.onSendToPasteEditor != null && _extractedText != null)
+                GestureDetector(
+                  onTap: () {
                     HapticFeedback.lightImpact();
                     widget.onSendToPasteEditor!(_extractedText!);
                   },
-                  icon: const Icon(Icons.edit_note_rounded, size: 16),
-                  label: Text(
-                    'Load in Editor',
-                    style: TerminalTheme.fontSans(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: TerminalTheme.infoBlue,
-                    foregroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
-                  ),
+                  child: NeoTheme.sticker(context,
+                      text: 'LOAD IN EDITOR',
+                      icon: Icons.edit_note_rounded,
+                      color: c.cyan, fg: c.border, fontSize: 11),
                 ),
-              ],
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
-          if (_capturedImagePath != null &&
-              File(_capturedImagePath!).existsSync()) ...[
+          // Image preview
+          if (_capturedImagePath != null && File(_capturedImagePath!).existsSync()) ...[
             Container(
-              height: 150,
+              height: 140,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: TerminalTheme.border),
+                borderRadius: BorderRadius.circular(0),
+                border: Border.all(color: c.border, width: 2.5),
               ),
-              clipBehavior: Clip.antiAlias,
-              child: Image.file(
-                File(_capturedImagePath!),
-                fit: BoxFit.cover,
-                width: double.infinity,
-              ),
+              clipBehavior: Clip.hardEdge,
+              child: Image.file(File(_capturedImagePath!), fit: BoxFit.cover, width: double.infinity),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
           ],
 
-          // Extracted OCR Text Box (Collapsible / Preview)
+          // OCR text box
           Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF090D13),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: TerminalTheme.border),
+              color: c.surfaceAlt,
+              borderRadius: BorderRadius.circular(0),
+              border: Border.all(color: c.border, width: NeoTheme.borderWidth),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: const BoxDecoration(
-                    color: TerminalTheme.surface,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(15),
-                      topRight: Radius.circular(15),
-                    ),
-                    border: Border(
-                      bottom: BorderSide(color: TerminalTheme.border),
-                    ),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: c.surface,
+                    border: Border(bottom: BorderSide(color: c.border, width: 2)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.document_scanner_rounded,
-                          size: 14, color: TerminalTheme.infoBlue),
+                      Icon(Icons.document_scanner_rounded, size: 14, color: c.cyan),
                       const SizedBox(width: 8),
                       Text(
                         'OCR EXTRACTED TEXT (${_extractedText?.length ?? 0} chars)',
-                        style: TerminalTheme.fontMono(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: TerminalTheme.textSecondary,
+                        style: NeoTheme.fontMono(
+                          fontSize: 10, fontWeight: FontWeight.w800, color: c.textSecondary,
                         ),
                       ),
                     ],
@@ -720,34 +546,26 @@ class _CameraScanScreenState extends State<CameraScanScreen>
                   padding: const EdgeInsets.all(14),
                   child: SelectableText(
                     _extractedText ?? '',
-                    style: TerminalTheme.fontMono(
-                      fontSize: 11.5,
-                      height: 1.45,
-                      color: TerminalTheme.textPrimary,
-                    ),
+                    style: NeoTheme.fontMono(fontSize: 11.5, height: 1.45, color: c.textPrimary),
                   ),
                 ),
               ],
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
 
-          // Findings List
           if (_findings.isNotEmpty) ...[
             Text(
               'OCR FINDINGS (${_findings.length})',
-              style: TerminalTheme.fontSans(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w800,
-                color: TerminalTheme.textSecondary,
-                letterSpacing: 0.5,
+              style: NeoTheme.fontSans(
+                fontSize: 13, fontWeight: FontWeight.w800, color: c.textSecondary, letterSpacing: 0.4,
               ),
             ),
             const SizedBox(height: 12),
-            ..._findings.map((finding) => FindingCard(
-                  key: ValueKey('${finding.type}_${finding.startIndex}'),
-                  finding: finding,
+            ..._findings.map((f) => FindingCard(
+                  key: ValueKey('${f.type}_${f.startIndex}'),
+                  finding: f,
                 )),
           ],
         ],

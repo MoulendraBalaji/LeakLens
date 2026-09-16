@@ -3,15 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/finding.dart';
 import '../services/scanner_service.dart';
-import '../theme/terminal_theme.dart';
+import '../theme/neo_theme.dart';
 import '../widgets/finding_card.dart';
 import '../widgets/status_banner.dart';
 
-/// Screen allowing the user to paste terminal output, .env contents, or code
-/// and perform instant reactive on-device credential scanning.
+/// Paste / buffer screen — paste terminal output or .env files for
+/// instant on-device credential scanning.
 class PasteScanScreen extends StatefulWidget {
   final String? initialText;
-
   const PasteScanScreen({super.key, this.initialText});
 
   @override
@@ -25,7 +24,6 @@ class _PasteScanScreenState extends State<PasteScanScreen> {
   bool _isScanning = false;
   Severity? _selectedSeverityFilter;
 
-  // Preset demo samples
   static const Map<String, String> _samplePresets = {
     'AWS & Stripe .env': '''# Production Environment Secrets
 APP_ENV=production
@@ -78,8 +76,7 @@ PASS src/index.test.ts (4 tests passed)
   @override
   void didUpdateWidget(PasteScanScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.initialText != null &&
-        widget.initialText != _textController.text) {
+    if (widget.initialText != null && widget.initialText != _textController.text) {
       _textController.text = widget.initialText!;
       _runScanImmediately(widget.initialText!);
     }
@@ -92,13 +89,9 @@ PASS src/index.test.ts (4 tests passed)
     super.dispose();
   }
 
-  /// Debounces input changes by ~300ms as requested in specification
   void _onTextChanged(String text) {
     _debounceTimer?.cancel();
-    setState(() {
-      _isScanning = true;
-    });
-
+    setState(() => _isScanning = true);
     _debounceTimer = Timer(const Duration(milliseconds: 300), () {
       _runScanImmediately(text);
     });
@@ -106,51 +99,37 @@ PASS src/index.test.ts (4 tests passed)
 
   void _runScanImmediately(String text) {
     final results = ScannerService.instance.scanText(text);
-    if (mounted) {
-      setState(() {
-        _findings = results;
-        _isScanning = false;
-      });
-    }
+    if (mounted) setState(() { _findings = results; _isScanning = false; });
   }
 
-  /// Copies the original text with all detected secrets masked in place
   void _copyRedactedVersion() {
     final original = _textController.text;
     if (original.isEmpty) return;
-
     final sanitized =
         ScannerService.instance.generateRedactedDocument(original, _findings);
-
     HapticFeedback.lightImpact();
     Clipboard.setData(ClipboardData(text: sanitized));
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: TerminalTheme.surfaceHighlight,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: TerminalTheme.safeGreen),
-        ),
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle_rounded,
-                color: TerminalTheme.safeGreen, size: 20),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Redacted version copied to clipboard!\nAll detected credentials masked with •',
-                style: TerminalTheme.fontSans(
-                  fontSize: 12.5,
-                  color: TerminalTheme.textBright,
-                ),
-              ),
-            ),
-          ],
-        ),
+    final c = NeoColors.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      backgroundColor: c.surfaceAlt,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(0),
+        side: BorderSide(color: c.green, width: 2),
       ),
-    );
+      content: Row(
+        children: [
+          Icon(Icons.check_circle_rounded, color: c.green, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Redacted version copied — all secrets masked with •',
+              style: NeoTheme.fontSans(fontSize: 12.5, color: c.textBright),
+            ),
+          ),
+        ],
+      ),
+    ));
   }
 
   void _loadPreset(String key) {
@@ -173,6 +152,7 @@ PASS src/index.test.ts (4 tests passed)
 
   @override
   Widget build(BuildContext context) {
+    final c = NeoColors.of(context);
     final filteredFindings = _selectedSeverityFilter == null
         ? _findings
         : _findings
@@ -180,199 +160,135 @@ PASS src/index.test.ts (4 tests passed)
             .toList();
 
     return SingleChildScrollView(
-      // Padding with 100px bottom offset to ensure full clearance above floating dock
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 110),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 110),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Live Status Banner (Safe to Push / N Secrets Found)
+          // STATUS
           StatusBanner(
             findings: _findings,
             isScanning: _isScanning,
             onCopyRedacted: _findings.isNotEmpty ? _copyRedactedVersion : null,
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
-          // Action Toolbar: Presets dropdown, Paste, Clear, Redact
-          Row(
+          // TOOLBAR ROW
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              // Presets Dropdown
+              // Preset picker
               PopupMenuButton<String>(
-                color: TerminalTheme.surface,
-                tooltip: 'Load Test Samples',
+                tooltip: 'Load sample',
                 onSelected: _loadPreset,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  side: const BorderSide(color: TerminalTheme.border),
-                ),
                 itemBuilder: (ctx) => _samplePresets.keys
-                    .map(
-                      (name) => PopupMenuItem(
-                        value: name,
-                        child: Row(
-                          children: [
-                            const Icon(Icons.code_rounded,
-                                size: 16, color: TerminalTheme.infoBlue),
-                            const SizedBox(width: 8),
-                            Text(
-                              name,
-                              style: TerminalTheme.fontSans(
-                                fontSize: 13,
-                                color: TerminalTheme.textPrimary,
+                    .map((name) => PopupMenuItem(
+                          value: name,
+                          child: Row(
+                            children: [
+                              Icon(Icons.code_rounded,
+                                  size: 16, color: c.cyan),
+                              const SizedBox(width: 8),
+                              Text(
+                                name,
+                                style: NeoTheme.fontSans(
+                                    fontSize: 13, color: c.textBright),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
+                            ],
+                          ),
+                        ))
                     .toList(),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: TerminalTheme.surfaceHighlight,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: TerminalTheme.border),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.auto_awesome_rounded,
-                          size: 14, color: TerminalTheme.infoBlue),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Samples',
-                        style: TerminalTheme.fontSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: TerminalTheme.textBright,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Icon(Icons.arrow_drop_down,
-                          size: 18, color: TerminalTheme.textSecondary),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-
-              // Paste Button
-              IconButton.outlined(
-                tooltip: 'Paste from clipboard',
-                icon: const Icon(Icons.paste_rounded, size: 16),
-                style: IconButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  foregroundColor: TerminalTheme.textPrimary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  side: const BorderSide(color: TerminalTheme.border),
-                ),
-                onPressed: _pasteFromClipboard,
+                child: NeoTheme.sticker(context,
+                    text: 'SAMPLES',
+                    icon: Icons.auto_awesome_rounded,
+                    color: c.cyan, fontSize: 11),
               ),
 
-              // Clear Button
-              if (_textController.text.isNotEmpty) ...[
-                const SizedBox(width: 6),
-                IconButton.outlined(
-                  tooltip: 'Clear input',
-                  icon: const Icon(Icons.clear_rounded, size: 16),
-                  style: IconButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    foregroundColor: TerminalTheme.alertRed,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    side: const BorderSide(color: TerminalTheme.border),
-                  ),
-                  onPressed: () {
+              // Paste
+              GestureDetector(
+                onTap: _pasteFromClipboard,
+                child: NeoTheme.sticker(context,
+                    text: 'PASTE',
+                    icon: Icons.content_paste_rounded,
+                    fontSize: 11),
+              ),
+
+              // Clear
+              if (_textController.text.isNotEmpty)
+                GestureDetector(
+                  onTap: () {
                     HapticFeedback.selectionClick();
                     _textController.clear();
                     _runScanImmediately('');
                   },
+                  child: NeoTheme.sticker(context,
+                      text: 'CLEAR',
+                      icon: Icons.close_rounded,
+                      color: c.red, fontSize: 11),
                 ),
-              ],
 
-              const Spacer(),
-
-              // Copy Redacted Button
+              // Copy Redacted
               if (_findings.isNotEmpty)
-                FilledButton.icon(
-                  onPressed: _copyRedactedVersion,
-                  icon: const Icon(Icons.copy_rounded, size: 14),
-                  label: Text(
-                    'Copy Redacted',
-                    style: TerminalTheme.fontSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: TerminalTheme.safeGreen,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
+                GestureDetector(
+                  onTap: _copyRedactedVersion,
+                  child: NeoTheme.sticker(context,
+                      text: 'COPY REDACTED',
+                      icon: Icons.copy_rounded,
+                      color: c.green,
+                      fg: c.border,
+                      fontSize: 11),
                 ),
             ],
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
-          // Monospace Terminal Input Box
+          // INPUT BOX
           Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF090D13),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: TerminalTheme.border),
+              color: c.surfaceAlt,
+              borderRadius: BorderRadius.circular(0),
+              border: Border.all(color: c.border, width: NeoTheme.borderWidth),
+              boxShadow: [NeoTheme.hardShadow(c.shadow, offset: const Offset(5, 5))],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Terminal window micro-header
+                // Mini header
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: const BoxDecoration(
-                    color: TerminalTheme.surface,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(15),
-                      topRight: Radius.circular(15),
-                    ),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: c.surface,
                     border: Border(
-                      bottom: BorderSide(color: TerminalTheme.border),
+                      bottom: BorderSide(color: c.border, width: 2),
                     ),
                   ),
                   child: Row(
                     children: [
                       Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: TerminalTheme.safeGreen,
+                        width: 9, height: 9,
+                        decoration: BoxDecoration(
+                          color: c.green,
+                          border: Border.all(color: c.border, width: 2),
+                          borderRadius: BorderRadius.circular(0),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         'buffer.txt',
-                        style: TerminalTheme.fontMono(
+                        style: NeoTheme.fontMono(
                           fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: TerminalTheme.textSecondary,
+                          fontWeight: FontWeight.w700,
+                          color: c.textSecondary,
                         ),
                       ),
                       const Spacer(),
                       Text(
-                        '${_textController.text.length} chars • ${_textController.text.split('\n').length} lines',
-                        style: TerminalTheme.fontMono(
+                        '${_textController.text.length} chars · ${_textController.text.split('\n').length} lines',
+                        style: NeoTheme.fontMono(
                           fontSize: 10,
-                          color: TerminalTheme.textMuted,
+                          color: c.textMuted,
                         ),
                       ),
                     ],
@@ -383,17 +299,16 @@ PASS src/index.test.ts (4 tests passed)
                   maxLines: 8,
                   minLines: 5,
                   onChanged: _onTextChanged,
-                  style: TerminalTheme.fontMono(
+                  style: NeoTheme.fontMono(
                     fontSize: 12,
                     height: 1.5,
-                    color: TerminalTheme.textBright,
+                    color: c.textBright,
                   ),
                   decoration: InputDecoration(
-                    hintText:
-                        'Paste terminal logs, git diffs, curl commands, or .env files here...\n\nExample:\nAWS_KEY=AKIAIOSFODNN7EXAMPLE\nSTRIPE_KEY=sk_live_51Abcdef...',
-                    hintStyle: TerminalTheme.fontMono(
+                    hintText: 'Paste terminal logs, git diffs, curl commands, or .env files here...',
+                    hintStyle: NeoTheme.fontMono(
                       fontSize: 12,
-                      color: TerminalTheme.textMuted.withValues(alpha: 0.6),
+                      color: c.textMuted.withValues(alpha: 0.6),
                     ),
                     filled: false,
                     border: InputBorder.none,
@@ -406,79 +321,66 @@ PASS src/index.test.ts (4 tests passed)
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
 
-          // Findings Section Header
+          // FINDINGS HEADER + FILTERS
           if (_findings.isNotEmpty) ...[
             Row(
               children: [
                 Text(
-                  'DETECTED SECRETS (${_findings.length})',
-                  style: TerminalTheme.fontSans(
-                    fontSize: 12.5,
+                  'DETECTED (${_findings.length})',
+                  style: NeoTheme.fontSans(
+                    fontSize: 13,
                     fontWeight: FontWeight.w800,
-                    color: TerminalTheme.textSecondary,
-                    letterSpacing: 0.5,
+                    color: c.textSecondary,
+                    letterSpacing: 0.4,
                   ),
                 ),
                 const Spacer(),
-                // Filter chips
-                _buildSeverityFilterChip(null, 'ALL'),
+                _filterChip(c, null, 'ALL'),
                 const SizedBox(width: 4),
-                _buildSeverityFilterChip(Severity.high, 'HIGH'),
+                _filterChip(c, Severity.high, 'HIGH'),
                 const SizedBox(width: 4),
-                _buildSeverityFilterChip(Severity.medium, 'MED'),
+                _filterChip(c, Severity.medium, 'MED'),
               ],
             ),
             const SizedBox(height: 12),
-
-            // Findings List Cards
-            ...filteredFindings.map((finding) => FindingCard(
-                  key: ValueKey('${finding.type}_${finding.startIndex}'),
-                  finding: finding,
+            ...filteredFindings.map((f) => FindingCard(
+                  key: ValueKey('${f.type}_${f.startIndex}'),
+                  finding: f,
                 )),
           ] else if (_textController.text.isNotEmpty) ...[
+            // Empty state
             Container(
               padding: const EdgeInsets.all(28),
               decoration: BoxDecoration(
-                color: TerminalTheme.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: TerminalTheme.border),
+                color: c.surface,
+                border: Border.all(color: c.border, width: NeoTheme.borderWidth),
+                boxShadow: [NeoTheme.hardShadow(c.shadow, offset: const Offset(6, 6))],
               ),
               child: Column(
                 children: [
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: 48, height: 48,
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: TerminalTheme.safeGreen.withValues(alpha: 0.15),
-                      border: Border.all(
-                        color: TerminalTheme.safeGreen.withValues(alpha: 0.4),
-                      ),
+                      color: c.green,
+                      border: Border.all(color: c.border, width: 2.5),
+                      borderRadius: BorderRadius.circular(0),
                     ),
-                    child: const Icon(
-                      Icons.shield_outlined,
-                      size: 26,
-                      color: TerminalTheme.safeGreen,
-                    ),
+                    child: Icon(Icons.shield_rounded, size: 26, color: c.border),
                   ),
                   const SizedBox(height: 14),
                   Text(
-                    'No Credentials Detected',
-                    style: TerminalTheme.fontSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: TerminalTheme.textBright,
-                    ),
+                    'NO CREDENTIALS DETECTED',
+                    style: NeoTheme.fontDisplay(fontSize: 16, color: c.textBright),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Scanned with AWS, GitHub, Google, Stripe, Slack, JWT, and Shannon entropy rules.',
+                    'Scanned with AWS, GitHub, Google, Stripe, Slack, JWT, DB URI and Shannon entropy rules.',
                     textAlign: TextAlign.center,
-                    style: TerminalTheme.fontSans(
-                      fontSize: 12,
-                      color: TerminalTheme.textSecondary,
+                    style: NeoTheme.fontMono(
+                      fontSize: 11,
+                      color: c.textSecondary,
                     ),
                   ),
                 ],
@@ -490,37 +392,29 @@ PASS src/index.test.ts (4 tests passed)
     );
   }
 
-  Widget _buildSeverityFilterChip(Severity? severity, String label) {
-    final isSelected = _selectedSeverityFilter == severity;
-    return InkWell(
+  Widget _filterChip(NeoColors c, Severity? severity, String label) {
+    final selected = _selectedSeverityFilter == severity;
+    return GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
-        setState(() {
-          _selectedSeverityFilter = severity;
-        });
+        setState(() => _selectedSeverityFilter = severity);
       },
-      borderRadius: BorderRadius.circular(6),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: isSelected
-              ? TerminalTheme.borderAccent.withValues(alpha: 0.25)
-              : TerminalTheme.surfaceHighlight,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: isSelected
-                ? TerminalTheme.borderAccent
-                : TerminalTheme.border,
-          ),
+          color: selected ? c.yellow : c.surface,
+          borderRadius: BorderRadius.circular(0),
+          border: Border.all(color: c.border, width: 2),
+          boxShadow: selected
+              ? [NeoTheme.hardShadow(c.border, offset: const Offset(2, 2))]
+              : null,
         ),
         child: Text(
           label,
-          style: TerminalTheme.fontMono(
+          style: NeoTheme.fontMono(
             fontSize: 10,
-            fontWeight: FontWeight.w700,
-            color: isSelected
-                ? TerminalTheme.textBright
-                : TerminalTheme.textSecondary,
+            fontWeight: FontWeight.w800,
+            color: selected ? c.border : c.textSecondary,
           ),
         ),
       ),

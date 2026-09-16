@@ -48,9 +48,12 @@ class ScannerService {
   static final RegExp _jwtRegex = RegExp(
       r'\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b');
 
-  /// Database Connection URIs with embedded credentials
-  static final RegExp _dbUriRegex = RegExp(
-      r'(?:postgres|postgresql|mysql|mongodb|redis):\/\/[^:\s\/]+:([^@\s\/]+)@[^\s]+');
+  /// Database Connection URI tokens (scheme://...). The exact credential
+  /// portion is parsed separately because passwords can legitimately contain
+  /// '@' — a naive regex that stops at the first '@' leaks the rest.
+  static final RegExp _dbUriCandidateRegex = RegExp(
+      r'\b(?:postgres|postgresql|mysql|mongodb|redis|mssql|oracle|sqlite|amqp|rediss)(?:\+[a-z0-9]+)?://\S+',
+      caseSensitive: false);
 
   /// Generic Bearer token in headers or logs
   static final RegExp _bearerTokenRegex = RegExp(
@@ -280,25 +283,41 @@ class ScannerService {
       ));
     }
 
-    // 9. Database Connection URIs
-    for (final match in _dbUriRegex.allMatches(text)) {
-      final pass = match.group(1);
-      if (pass != null && pass.isNotEmpty) {
-        final fullMatch = match.group(0)!;
-        final start = match.start + fullMatch.indexOf(pass);
-        final end = start + pass.length;
-        findings.add(Finding.create(
-          type: 'Database Password',
-          matchedText: pass,
-          lineNumber: getLineNumber(start),
-          severity: Severity.high,
-          explanation: RiskExplainerService.instance
-              .explainRisk(type: 'Database Password', snippet: pass),
-          startIndex: start,
-          endIndex: end,
-          contextLine: getContextLine(start, end),
-        ));
-      }
+    // 9. Database Connection URIs (password-aware parser)
+    for (final match in _dbUriCandidateRegex.allMatches(text)) {
+      final token = match.group(0)!;
+      final schemeEnd = token.indexOf('://');
+      if (schemeEnd <= 0) continue;
+      final restStart = schemeEnd + 3;
+      if (restStart >= token.length) continue;
+
+      final rest = token.substring(restStart);
+      // Passwords may contain '@' — the real separator is the LAST '@'
+      // (everything after it up to whitespace is the host[:port]/path).
+      final lastAt = rest.lastIndexOf('@');
+      if (lastAt < 0) continue;
+
+      final userinfo = rest.substring(0, lastAt);
+      final colon = userinfo.indexOf(':');
+      if (colon < 0) continue;
+
+      final pass = userinfo.substring(colon + 1);
+      if (pass.isEmpty) continue;
+
+      final passIndexInToken = restStart + colon + 1;
+      final start = match.start + passIndexInToken;
+      final end = start + pass.length;
+      findings.add(Finding.create(
+        type: 'Database Password',
+        matchedText: pass,
+        lineNumber: getLineNumber(start),
+        severity: Severity.high,
+        explanation: RiskExplainerService.instance
+            .explainRisk(type: 'Database Password', snippet: pass),
+        startIndex: start,
+        endIndex: end,
+        contextLine: getContextLine(start, end),
+      ));
     }
 
     // 10. Generic Bearer Tokens

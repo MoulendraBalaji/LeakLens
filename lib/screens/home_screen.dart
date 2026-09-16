@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
-import '../theme/terminal_theme.dart';
-import '../widgets/floating_nav_bar.dart';
-import '../widgets/terminal_app_bar.dart';
+import '../theme/neo_theme.dart';
+import '../widgets/neo_nav_bar.dart';
+import '../widgets/neo_app_bar.dart';
 import 'camera_scan_screen.dart';
 import 'paste_scan_screen.dart';
 
-/// Main screen containing floating island bottom navigation and smooth fluid page transitions.
+/// Main screen hosting the paste and camera pages with a neo-brutalist dock.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final bool isDark;
+  final VoidCallback onToggleTheme;
+
+  const HomeScreen({
+    super.key,
+    required this.isDark,
+    required this.onToggleTheme,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -32,12 +39,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onTabChanged(int index) {
     if (_currentIndex == index) return;
-    setState(() {
-      _currentIndex = index;
-    });
+    setState(() => _currentIndex = index);
     _pageController.animateToPage(
       index,
-      duration: const Duration(milliseconds: 320),
+      duration: const Duration(milliseconds: 260),
       curve: Curves.easeOutCubic,
     );
   }
@@ -47,47 +52,39 @@ class _HomeScreenState extends State<HomeScreen> {
       _pendingPasteText = text;
       _currentIndex = 0;
     });
-    _pageController.animateToPage(
-      0,
-      duration: const Duration(milliseconds: 320),
-      curve: Curves.easeOutCubic,
-    );
+    _pageController.animateToPage(0,
+        duration: const Duration(milliseconds: 260), curve: Curves.easeOutCubic);
   }
 
   @override
   Widget build(BuildContext context) {
+    final c = NeoColors.of(context);
+
     return Scaffold(
-      backgroundColor: TerminalTheme.background,
-      appBar: const TerminalAppBar(),
-      extendBody: true, // Allows content to flow behind floating dock
+      backgroundColor: c.background,
+      appBar: NeoAppBar(
+        isDark: widget.isDark,
+        onToggleTheme: widget.onToggleTheme,
+      ),
+      extendBody: true,
       body: Stack(
         children: [
           PageView(
             controller: _pageController,
             physics: const BouncingScrollPhysics(),
-            onPageChanged: (index) {
-              setState(() {
-                _currentIndex = index;
-              });
-            },
+            onPageChanged: (index) => setState(() => _currentIndex = index),
             children: [
-              PasteScanScreen(
-                initialText: _pendingPasteText,
-              ),
-              CameraScanScreen(
-                onSendToPasteEditor: _onSendOcrTextToEditor,
-              ),
+              PasteScanScreen(initialText: _pendingPasteText),
+              CameraScanScreen(onSendToPasteEditor: _onSendOcrTextToEditor),
             ],
           ),
-
-          // Floating Glassmorphic Navigation Island
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
             child: SafeArea(
               top: false,
-              child: FloatingNavBar(
+              child: NeoNavBar(
                 selectedIndex: _currentIndex,
                 onItemSelected: _onTabChanged,
               ),
