@@ -114,8 +114,8 @@ PASS src/index.test.ts (4 tests passed)
       backgroundColor: c.surfaceAlt,
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(0),
-        side: BorderSide(color: c.green, width: 2),
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: c.green.withValues(alpha: 0.5), width: 1),
       ),
       content: Row(
         children: [
@@ -160,7 +160,7 @@ PASS src/index.test.ts (4 tests passed)
             .toList();
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 110),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 110),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -211,6 +211,7 @@ PASS src/index.test.ts (4 tests passed)
                 child: NeoTheme.sticker(context,
                     text: 'PASTE',
                     icon: Icons.content_paste_rounded,
+                    color: c.yellow,
                     fontSize: 11),
               ),
 
@@ -236,7 +237,6 @@ PASS src/index.test.ts (4 tests passed)
                       text: 'COPY REDACTED',
                       icon: Icons.copy_rounded,
                       color: c.green,
-                      fg: c.border,
                       fontSize: 11),
                 ),
             ],
@@ -247,77 +247,85 @@ PASS src/index.test.ts (4 tests passed)
           // INPUT BOX
           Container(
             decoration: BoxDecoration(
-              color: c.surfaceAlt,
-              borderRadius: BorderRadius.circular(0),
-              border: Border.all(color: c.border, width: NeoTheme.borderWidth),
-              boxShadow: [NeoTheme.hardShadow(c.shadow, offset: const Offset(5, 5))],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Mini header
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: c.surface,
-                    border: Border(
-                      bottom: BorderSide(color: c.border, width: 2),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 9, height: 9,
-                        decoration: BoxDecoration(
-                          color: c.green,
-                          border: Border.all(color: c.border, width: 2),
-                          borderRadius: BorderRadius.circular(0),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'buffer.txt',
-                        style: NeoTheme.fontMono(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: c.textSecondary,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '${_textController.text.length} chars · ${_textController.text.split('\n').length} lines',
-                        style: NeoTheme.fontMono(
-                          fontSize: 10,
-                          color: c.textMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                TextField(
-                  controller: _textController,
-                  maxLines: 8,
-                  minLines: 5,
-                  onChanged: _onTextChanged,
-                  style: NeoTheme.fontMono(
-                    fontSize: 12,
-                    height: 1.5,
-                    color: c.textBright,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Paste terminal logs, git diffs, curl commands, or .env files here...',
-                    hintStyle: NeoTheme.fontMono(
-                      fontSize: 12,
-                      color: c.textMuted.withValues(alpha: 0.6),
-                    ),
-                    filled: false,
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    contentPadding: const EdgeInsets.all(14),
-                  ),
+              color: c.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: c.border, width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                  color: c.shadow,
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
                 ),
               ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Mini header
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: c.surfaceAlt,
+                      border: Border(
+                        bottom: BorderSide(color: c.border, width: 1),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 8, height: 8,
+                          decoration: BoxDecoration(
+                            color: c.green,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'buffer.txt',
+                          style: NeoTheme.fontMono(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: c.textSecondary,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          '${_textController.text.length} chars · ${_textController.text.split('\n').length} lines',
+                          style: NeoTheme.fontMono(
+                            fontSize: 10.5,
+                            color: c.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  TextField(
+                    controller: _textController,
+                    maxLines: 8,
+                    minLines: 5,
+                    onChanged: _onTextChanged,
+                    style: NeoTheme.fontMono(
+                      fontSize: 12.5,
+                      height: 1.5,
+                      color: c.textBright,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Paste terminal logs, git diffs, curl commands, or .env files here...',
+                      hintStyle: NeoTheme.fontMono(
+                        fontSize: 12,
+                        color: c.textMuted.withValues(alpha: 0.6),
+                      ),
+                      filled: false,
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      contentPadding: const EdgeInsets.all(14),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
 
@@ -338,9 +346,9 @@ PASS src/index.test.ts (4 tests passed)
                 ),
                 const Spacer(),
                 _filterChip(c, null, 'ALL'),
-                const SizedBox(width: 4),
+                const SizedBox(width: 5),
                 _filterChip(c, Severity.high, 'HIGH'),
-                const SizedBox(width: 4),
+                const SizedBox(width: 5),
                 _filterChip(c, Severity.medium, 'MED'),
               ],
             ),
@@ -350,36 +358,60 @@ PASS src/index.test.ts (4 tests passed)
                   finding: f,
                 )),
           ] else if (_textController.text.isNotEmpty) ...[
-            // Empty state
+            // Clean empty state
             Container(
               padding: const EdgeInsets.all(28),
               decoration: BoxDecoration(
                 color: c.surface,
-                border: Border.all(color: c.border, width: NeoTheme.borderWidth),
-                boxShadow: [NeoTheme.hardShadow(c.shadow, offset: const Offset(6, 6))],
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: c.green.withValues(alpha: c.isDark ? 0.35 : 0.25),
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: c.green.withValues(alpha: 0.05),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                  BoxShadow(
+                    color: c.shadow,
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Column(
                 children: [
                   Container(
                     width: 48, height: 48,
                     decoration: BoxDecoration(
-                      color: c.green,
-                      border: Border.all(color: c.border, width: 2.5),
-                      borderRadius: BorderRadius.circular(0),
+                      color: c.green.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: c.green.withValues(alpha: 0.35),
+                        width: 1.2,
+                      ),
                     ),
-                    child: Icon(Icons.shield_rounded, size: 26, color: c.border),
+                    child: Center(
+                      child: Icon(Icons.shield_rounded, size: 24, color: c.green),
+                    ),
                   ),
                   const SizedBox(height: 14),
                   Text(
                     'NO CREDENTIALS DETECTED',
-                    style: NeoTheme.fontDisplay(fontSize: 16, color: c.textBright),
+                    style: NeoTheme.fontDisplay(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: c.textBright,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Scanned with AWS, GitHub, Google, Stripe, Slack, JWT, DB URI and Shannon entropy rules.',
+                    'Scanned with AWS, GitHub, Google, Stripe, Slack, JWT, DB URI and Shannon entropy detectors.',
                     textAlign: TextAlign.center,
-                    style: NeoTheme.fontMono(
-                      fontSize: 11,
+                    style: NeoTheme.fontSans(
+                      fontSize: 12,
                       color: c.textSecondary,
                     ),
                   ),
@@ -394,6 +426,12 @@ PASS src/index.test.ts (4 tests passed)
 
   Widget _filterChip(NeoColors c, Severity? severity, String label) {
     final selected = _selectedSeverityFilter == severity;
+    final accent = severity == Severity.high
+        ? c.red
+        : severity == Severity.medium
+            ? c.yellow
+            : c.cyan;
+
     return GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
@@ -402,19 +440,24 @@ PASS src/index.test.ts (4 tests passed)
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: selected ? c.yellow : c.surface,
-          borderRadius: BorderRadius.circular(0),
-          border: Border.all(color: c.border, width: 2),
-          boxShadow: selected
-              ? [NeoTheme.hardShadow(c.border, offset: const Offset(2, 2))]
-              : null,
+          color: selected
+              ? accent.withValues(alpha: c.isDark ? 0.20 : 0.14)
+              : c.surfaceAlt,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected
+                ? accent.withValues(alpha: 0.5)
+                : c.border,
+            width: 1,
+          ),
         ),
         child: Text(
           label,
           style: NeoTheme.fontMono(
             fontSize: 10,
-            fontWeight: FontWeight.w800,
-            color: selected ? c.border : c.textSecondary,
+            fontWeight: FontWeight.w700,
+            color: selected ? accent : c.textSecondary,
+            letterSpacing: 0.3,
           ),
         ),
       ),

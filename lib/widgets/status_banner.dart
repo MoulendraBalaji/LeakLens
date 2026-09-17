@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import '../models/finding.dart';
 import '../theme/neo_theme.dart';
 
-/// Bold neo-brutalist status banner — a fat solid-color slab that instantly
-/// communicates safe / danger status with zero ambiguity.
+/// Refined cybersecurity status banner — a translucent glass posture card that
+/// clearly communicates safe / danger posture without visual clutter.
 class StatusBanner extends StatelessWidget {
   final List<Finding> findings;
   final bool isScanning;
@@ -25,33 +25,54 @@ class StatusBanner extends StatelessWidget {
     final medCount = findings.where((f) => f.severity == Severity.medium).length;
     final lowCount = findings.where((f) => f.severity == Severity.low).length;
 
-    Color bg;
-    Color bannerBorder;
+    final Color statusColor;
+    final String title;
+    final String subtitle;
+    final IconData statusIcon;
+
     if (isScanning) {
-      bg = c.yellow;
-      bannerBorder = c.border;
+      statusColor = c.cyan;
+      title = 'SCANNING...';
+      subtitle = 'Shannon entropy + regex engine running';
+      statusIcon = Icons.radar_rounded;
     } else if (isSafe) {
-      bg = c.green;
-      bannerBorder = c.border;
+      statusColor = c.green;
+      title = 'SAFE TO PUSH';
+      subtitle = 'All clear — zero exposed credentials found';
+      statusIcon = Icons.verified_rounded;
     } else if (highCount > 0) {
-      bg = c.red;
-      bannerBorder = c.border;
+      statusColor = c.red;
+      title = '${findings.length} SECRET${findings.length > 1 ? 'S' : ''} DETECTED';
+      subtitle = 'Mask or revoke before committing to git';
+      statusIcon = Icons.gpp_maybe_rounded;
     } else {
-      bg = c.orange;
-      bannerBorder = c.border;
+      statusColor = c.yellow;
+      title = '${findings.length} SECRET${findings.length > 1 ? 'S' : ''} DETECTED';
+      subtitle = 'Review flagged tokens before publishing';
+      statusIcon = Icons.warning_amber_rounded;
     }
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(0),
-        border: Border.all(color: bannerBorder, width: NeoTheme.borderWidth),
+        color: c.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: statusColor.withValues(alpha: c.isDark ? 0.45 : 0.35),
+          width: 1.2,
+        ),
         boxShadow: [
-          NeoTheme.hardShadow(
-            bannerBorder,
-            offset: const Offset(6, 6),
+          BoxShadow(
+            color: statusColor.withValues(alpha: c.isDark ? 0.12 : 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: c.shadow,
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -60,95 +81,103 @@ class StatusBanner extends StatelessWidget {
         children: [
           Row(
             children: [
-              // Status icon / spinner
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: isScanning
-                    ? SizedBox(
-                        key: const ValueKey('spinning'),
-                        width: 32,
-                        height: 32,
-                        child: const CircularProgressIndicator(
-                          strokeWidth: 3,
-                          color: Color(0xFF0B0B0E),
-                        ),
-                      )
-                    : Container(
-                        key: ValueKey(isSafe ? 'safe' : 'danger'),
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          color: isSafe ? c.border : const Color(0x33000000),
-                          borderRadius: BorderRadius.circular(2),
-                          border: Border.all(
-                            color: c.border,
-                            width: 2,
+              // Glowing status icon
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: c.isDark ? 0.16 : 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: statusColor.withValues(alpha: 0.35),
+                    width: 1.2,
+                  ),
+                ),
+                child: Center(
+                  child: isScanning
+                      ? SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: statusColor,
                           ),
+                        )
+                      : Icon(
+                          statusIcon,
+                          color: statusColor,
+                          size: 24,
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              isSafe
-                                  ? Icons.check_rounded
-                                  : Icons.warning_rounded,
-                              size: 20,
-                              color: isSafe ? c.green : c.border,
-                            ),
-                          ],
-                        ),
-                      ),
+                ),
               ),
               const SizedBox(width: 14),
+
+              // Title and subtitle
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isScanning
-                          ? 'SCANNING...'
-                          : isSafe
-                              ? 'SAFE TO PUSH'
-                              : '${findings.length} SECRET${findings.length > 1 ? 'S' : ''}',
+                      title,
                       style: NeoTheme.fontDisplay(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        color: c.border,
-                        letterSpacing: 0.2,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: c.textBright,
+                        letterSpacing: -0.2,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     Text(
-                      isScanning
-                          ? 'Regex + Shannon entropy analysis running'
-                          : isSafe
-                              ? 'All clear — no exposed credentials found'
-                              : 'Mask or revoke before pushing to source',
-                      style: NeoTheme.fontMono(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xAA000000),
+                      subtitle,
+                      style: NeoTheme.fontSans(
+                        fontSize: 12,
+                        color: c.textSecondary,
+                        height: 1.3,
                       ),
                     ),
                   ],
                 ),
               ),
+
+              // Optional quick Redact button
               if (!isSafe && onCopyRedacted != null)
-                NeoTheme.sticker(
-                  context,
-                  text: 'REDACT ALL',
-                  color: c.border,
-                  fg: bg,
-                  icon: Icons.shield_rounded,
-                  fontSize: 10,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                GestureDetector(
                   onTap: () {
                     HapticFeedback.lightImpact();
                     onCopyRedacted!();
                   },
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: c.green.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: c.green.withValues(alpha: 0.4),
+                        width: 1.1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.shield_rounded, size: 14, color: c.green),
+                        const SizedBox(width: 5),
+                        Text(
+                          'REDACT ALL',
+                          style: NeoTheme.fontMono(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: c.green,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
             ],
           ),
+
+          // Severity counters if findings present
           if (!isSafe) ...[
             const SizedBox(height: 14),
             Wrap(
@@ -156,12 +185,12 @@ class StatusBanner extends StatelessWidget {
               runSpacing: 6,
               children: [
                 if (highCount > 0)
-                  _countBadge('$highCount× HIGH', c.border),
+                  _countBadge('$highCount HIGH', c.red, c),
                 if (medCount > 0)
-                  _countBadge('$medCount× MED', c.border),
+                  _countBadge('$medCount MED', c.yellow, c),
                 if (lowCount > 0)
-                  _countBadge('$lowCount× LOW', c.border),
-                _countBadge('REGEX + SHANNON', const Color(0x77000000)),
+                  _countBadge('$lowCount LOW', c.cyan, c),
+                _countBadge('REGEX + SHANNON', c.textSecondary, c),
               ],
             ),
           ],
@@ -170,20 +199,24 @@ class StatusBanner extends StatelessWidget {
     );
   }
 
-  static Widget _countBadge(String text, Color fg) {
+  static Widget _countBadge(String text, Color accent, NeoColors c) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0x22000000),
-        borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: fg, width: 1.5),
+        color: accent.withValues(alpha: c.isDark ? 0.12 : 0.08),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: accent.withValues(alpha: c.isDark ? 0.35 : 0.25),
+          width: 1.0,
+        ),
       ),
       child: Text(
         text,
         style: NeoTheme.fontMono(
           fontSize: 10,
-          fontWeight: FontWeight.w800,
-          color: fg,
+          fontWeight: FontWeight.w700,
+          color: accent,
+          letterSpacing: 0.3,
         ),
       ),
     );

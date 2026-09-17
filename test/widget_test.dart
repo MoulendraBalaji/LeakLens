@@ -4,7 +4,7 @@ import 'package:leak_lens/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('LeakLens App launches with neo-brutalist UI',
+  testWidgets('LeakLens App launches with refined UI',
       (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(const LeakLensApp());

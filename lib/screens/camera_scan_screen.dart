@@ -219,12 +219,18 @@ class _CameraScanScreenState extends State<CameraScanScreen>
         // Viewfinder
         Expanded(
           child: Container(
-            margin: const EdgeInsets.fromLTRB(14, 8, 14, 10),
+            margin: const EdgeInsets.fromLTRB(16, 10, 16, 12),
             decoration: BoxDecoration(
               color: Colors.black,
-              borderRadius: BorderRadius.circular(0),
-              border: Border.all(color: c.yellow, width: 3),
-              boxShadow: [NeoTheme.hardShadow(c.shadow, offset: const Offset(6, 6))],
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: c.border, width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                  color: c.shadow,
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
             clipBehavior: Clip.hardEdge,
             child: Stack(
@@ -258,7 +264,7 @@ class _CameraScanScreenState extends State<CameraScanScreen>
                               onTap: openAppSettings,
                               child: NeoTheme.sticker(context,
                                   text: 'GRANT PERMISSION',
-                                  color: c.yellow, fontSize: 10),
+                                  color: c.cyan, fontSize: 10),
                             ),
                           ],
                         ],
@@ -271,49 +277,50 @@ class _CameraScanScreenState extends State<CameraScanScreen>
                 // Processing overlay
                 if (_isProcessingOcr)
                   Container(
-                    color: Colors.black.withValues(alpha: 0.88),
+                    color: Colors.black.withValues(alpha: 0.85),
                     child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(24),
-                            decoration: BoxDecoration(
-                              color: c.yellow,
-                              borderRadius: BorderRadius.circular(0),
-                              border: Border.all(color: c.border, width: 3),
-                              boxShadow: [NeoTheme.hardShadow(c.border, offset: const Offset(6, 6))],
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 22),
+                        decoration: BoxDecoration(
+                          color: c.surface,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: c.cyan.withValues(alpha: 0.5), width: 1.2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: c.cyan.withValues(alpha: 0.15),
+                              blurRadius: 20,
                             ),
-                            child: Column(
-                              children: [
-                                const SizedBox(
-                                  width: 30, height: 30,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 3, color: Colors.black,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'EXTRACTING TEXT',
-                                  style: NeoTheme.fontDisplay(
-                                    fontSize: 18,
-                                    color: Colors.black,
-                                    letterSpacing: 0.4,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '100% on-device · ML Kit · Zero network',
-                                  style: NeoTheme.fontMono(
-                                    fontSize: 10,
-                                    color: const Color(0x99000000),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              width: 32, height: 32,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 3,
+                                color: c.cyan,
+                              ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 16),
+                            Text(
+                              'EXTRACTING TEXT',
+                              style: NeoTheme.fontDisplay(
+                                fontSize: 17,
+                                color: c.textBright,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '100% on-device · ML Kit · Zero network',
+                              style: NeoTheme.fontMono(
+                                fontSize: 10.5,
+                                color: c.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -324,45 +331,82 @@ class _CameraScanScreenState extends State<CameraScanScreen>
 
         // Bottom controls
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 96),
+          padding: const EdgeInsets.fromLTRB(24, 4, 24, 96),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               // Flash
-              GestureDetector(
+              InkWell(
                 onTap: _isCameraInitialized ? _toggleFlash : null,
+                borderRadius: BorderRadius.circular(14),
                 child: Container(
                   width: 48, height: 48,
                   decoration: BoxDecoration(
-                    color: _isFlashOn ? c.yellow : c.surface,
-                    borderRadius: BorderRadius.circular(0),
-                    border: Border.all(color: c.border, width: 2.5),
-                    boxShadow: [NeoTheme.hardShadow(c.border, offset: const Offset(3, 3))],
+                    color: _isFlashOn
+                        ? c.yellow.withValues(alpha: 0.2)
+                        : c.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: _isFlashOn ? c.yellow : c.border,
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(color: c.shadow, blurRadius: 8, offset: const Offset(0, 2)),
+                    ],
                   ),
                   child: Icon(
                     _isFlashOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
-                    color: _isFlashOn ? c.border : c.textSecondary,
+                    color: _isFlashOn ? c.yellow : c.textSecondary,
                     size: 22,
                   ),
                 ),
               ),
 
-              // Shutter
+              // Shutter button with glowing cyan/emerald ring
               GestureDetector(
                 onTap: _isCameraInitialized && !_isProcessingOcr ? _captureAndScan : null,
                 child: Container(
-                  width: 76, height: 76,
+                  width: 72, height: 72,
                   decoration: BoxDecoration(
-                    color: c.yellow,
-                    borderRadius: BorderRadius.circular(0),
-                    border: Border.all(color: c.border, width: 4),
-                    boxShadow: [NeoTheme.hardShadow(c.border, offset: const Offset(6, 6))],
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [c.cyan, c.green],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: c.cyan.withValues(alpha: 0.35),
+                        blurRadius: 18,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  child: Icon(Icons.camera_alt_rounded, color: Colors.black, size: 32),
+                  padding: const EdgeInsets.all(4),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: c.surface,
+                    ),
+                    child: Center(
+                      child: Container(
+                        width: 50, height: 50,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: c.cyan,
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt_rounded,
+                          color: Colors.black,
+                          size: 26,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
 
-              // More menu
+              // More / Gallery menu
               PopupMenuButton<String>(
                 tooltip: 'Import or switch',
                 color: c.surface,
@@ -370,9 +414,11 @@ class _CameraScanScreenState extends State<CameraScanScreen>
                   width: 48, height: 48,
                   decoration: BoxDecoration(
                     color: c.surface,
-                    borderRadius: BorderRadius.circular(0),
-                    border: Border.all(color: c.border, width: 2.5),
-                    boxShadow: [NeoTheme.hardShadow(c.border, offset: const Offset(3, 3))],
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: c.border, width: 1.2),
+                    boxShadow: [
+                      BoxShadow(color: c.shadow, blurRadius: 8, offset: const Offset(0, 2)),
+                    ],
                   ),
                   child: Icon(Icons.more_horiz_rounded, color: c.textBright, size: 22),
                 ),
@@ -415,13 +461,35 @@ class _CameraScanScreenState extends State<CameraScanScreen>
     return IgnorePointer(
       child: Stack(
         children: [
-          // Top hint
+          // Top alignment hint
           Positioned(
-            top: 14, left: 14, right: 14,
-            child: NeoTheme.sticker(context,
-                text: 'ALIGN TERMINAL OR SCREEN',
-                color: c.yellow, fg: c.border, fontSize: 10,
-                icon: Icons.center_focus_strong_rounded),
+            top: 14, left: 16, right: 16,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.65),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: c.cyan.withValues(alpha: 0.4), width: 1),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.center_focus_strong_rounded, size: 14, color: c.cyan),
+                    const SizedBox(width: 6),
+                    Text(
+                      'ALIGN TERMINAL OR SCREEN',
+                      style: NeoTheme.fontMono(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        color: c.cyan,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
 
           // Reticle frame
@@ -429,15 +497,15 @@ class _CameraScanScreenState extends State<CameraScanScreen>
             child: Container(
               margin: const EdgeInsets.all(36),
               decoration: BoxDecoration(
-                border: Border.all(color: c.yellow.withValues(alpha: 0.7), width: 2),
-                borderRadius: BorderRadius.circular(0),
+                border: Border.all(color: c.cyan.withValues(alpha: 0.25), width: 1),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Stack(
                 children: [
-                  _cornerBracket(c.yellow, isTop: true, isLeft: true),
-                  Positioned(top: 0, right: 0, child: _cornerBracket(c.yellow, isTop: true, isLeft: false)),
-                  Positioned(bottom: 0, left: 0, child: _cornerBracket(c.yellow, isTop: false, isLeft: true)),
-                  Positioned(bottom: 0, right: 0, child: _cornerBracket(c.yellow, isTop: false, isLeft: false)),
+                  _cornerBracket(c.cyan, isTop: true, isLeft: true),
+                  Positioned(top: 0, right: 0, child: _cornerBracket(c.cyan, isTop: true, isLeft: false)),
+                  Positioned(bottom: 0, left: 0, child: _cornerBracket(c.cyan, isTop: false, isLeft: true)),
+                  Positioned(bottom: 0, right: 0, child: _cornerBracket(c.cyan, isTop: false, isLeft: false)),
                 ],
               ),
             ),
@@ -453,10 +521,10 @@ class _CameraScanScreenState extends State<CameraScanScreen>
       child: DecoratedBox(
         decoration: BoxDecoration(
           border: Border(
-            top: isTop ? BorderSide(color: color, width: 4) : BorderSide.none,
-            bottom: !isTop ? BorderSide(color: color, width: 4) : BorderSide.none,
-            left: isLeft ? BorderSide(color: color, width: 4) : BorderSide.none,
-            right: !isLeft ? BorderSide(color: color, width: 4) : BorderSide.none,
+            top: isTop ? BorderSide(color: color, width: 3) : BorderSide.none,
+            bottom: !isTop ? BorderSide(color: color, width: 3) : BorderSide.none,
+            left: isLeft ? BorderSide(color: color, width: 3) : BorderSide.none,
+            right: !isLeft ? BorderSide(color: color, width: 3) : BorderSide.none,
           ),
         ),
       ),
@@ -466,7 +534,7 @@ class _CameraScanScreenState extends State<CameraScanScreen>
   Widget _buildResultsView() {
     final c = NeoColors.of(context);
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(14, 10, 14, 110),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 110),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -492,7 +560,7 @@ class _CameraScanScreenState extends State<CameraScanScreen>
                   child: NeoTheme.sticker(context,
                       text: 'LOAD IN EDITOR',
                       icon: Icons.edit_note_rounded,
-                      color: c.cyan, fg: c.border, fontSize: 11),
+                      color: c.green, fontSize: 11),
                 ),
             ],
           ),
@@ -504,52 +572,62 @@ class _CameraScanScreenState extends State<CameraScanScreen>
             Container(
               height: 140,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(0),
-                border: Border.all(color: c.border, width: 2.5),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: c.border, width: 1.2),
               ),
               clipBehavior: Clip.hardEdge,
               child: Image.file(File(_capturedImagePath!), fit: BoxFit.cover, width: double.infinity),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
           ],
 
           // OCR text box
           Container(
             decoration: BoxDecoration(
-              color: c.surfaceAlt,
-              borderRadius: BorderRadius.circular(0),
-              border: Border.all(color: c.border, width: NeoTheme.borderWidth),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: c.surface,
-                    border: Border(bottom: BorderSide(color: c.border, width: 2)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.document_scanner_rounded, size: 14, color: c.cyan),
-                      const SizedBox(width: 8),
-                      Text(
-                        'OCR EXTRACTED TEXT (${_extractedText?.length ?? 0} chars)',
-                        style: NeoTheme.fontMono(
-                          fontSize: 10, fontWeight: FontWeight.w800, color: c.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: SelectableText(
-                    _extractedText ?? '',
-                    style: NeoTheme.fontMono(fontSize: 11.5, height: 1.45, color: c.textPrimary),
-                  ),
+              color: c.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: c.border, width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                  color: c.shadow,
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
                 ),
               ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: c.surfaceAlt,
+                      border: Border(bottom: BorderSide(color: c.border, width: 1)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.document_scanner_rounded, size: 15, color: c.cyan),
+                        const SizedBox(width: 8),
+                        Text(
+                          'OCR EXTRACTED TEXT (${_extractedText?.length ?? 0} chars)',
+                          style: NeoTheme.fontMono(
+                            fontSize: 10.5, fontWeight: FontWeight.w700, color: c.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: SelectableText(
+                      _extractedText ?? '',
+                      style: NeoTheme.fontMono(fontSize: 12, height: 1.45, color: c.textPrimary),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
 

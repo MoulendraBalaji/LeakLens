@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/neo_theme.dart';
 
-/// Neo-brutalist bottom dock: a chunky slab with hard-shadow stamps.
-/// The active tab is injected as a heavy yellow sticker.
+/// Refined floating dock navigation bar with smooth active pill indicator.
 class NeoNavBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onItemSelected;
@@ -19,13 +18,27 @@ class NeoNavBar extends StatelessWidget {
     final c = NeoColors.of(context);
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      height: 68,
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 18),
+      height: 64,
       decoration: BoxDecoration(
         color: c.surface,
-        border: Border.all(color: c.border, width: NeoTheme.borderWidth),
-        boxShadow: [NeoTheme.hardShadow(c.shadow, offset: const Offset(6, 6))],
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: c.border, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: c.shadow,
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+          if (c.isDark)
+            BoxShadow(
+              color: c.cyan.withValues(alpha: 0.05),
+              blurRadius: 20,
+              offset: const Offset(0, 2),
+            ),
+        ],
       ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       child: Row(
         children: [
           Expanded(
@@ -36,7 +49,12 @@ class NeoNavBar extends StatelessWidget {
               label: 'PASTE',
             ),
           ),
-          Container(width: 1, height: 36, color: c.border),
+          Container(
+            width: 1,
+            height: 24,
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            color: c.border.withValues(alpha: 0.6),
+          ),
           Expanded(
             child: _buildNavItem(
               context,
@@ -68,38 +86,41 @@ class NeoNavBar extends StatelessWidget {
         }
       },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOut,
-        margin: EdgeInsets.all(isSelected ? 0 : 6),
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
         decoration: BoxDecoration(
-          color: isSelected ? c.yellow : Colors.transparent,
-          borderRadius: BorderRadius.circular(0),
+          color: isSelected
+              ? c.cyan.withValues(alpha: c.isDark ? 0.16 : 0.12)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
           border: isSelected
-              ? Border.all(color: c.border, width: 2.5)
-              : null,
-          boxShadow: isSelected
-              ? [NeoTheme.hardShadow(c.border, offset: const Offset(3, 3))]
+              ? Border.all(
+                  color: c.cyan.withValues(alpha: c.isDark ? 0.45 : 0.35),
+                  width: 1.2,
+                )
               : null,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 20,
-              color: isSelected ? c.border : c.textSecondary,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: NeoTheme.fontSans(
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
-                color: isSelected ? c.border : c.textSecondary,
-                letterSpacing: 0.4,
+        child: Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 20,
+                color: isSelected ? c.cyan : c.textSecondary,
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: NeoTheme.fontSans(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                  color: isSelected ? (c.isDark ? c.textBright : c.cyan) : c.textSecondary,
+                  letterSpacing: 0.4,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

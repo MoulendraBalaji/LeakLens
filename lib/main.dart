@@ -44,7 +44,7 @@ class _LeakLensAppState extends State<LeakLensApp> {
             _isDark ? Brightness.light : Brightness.dark,
         statusBarBrightness: _isDark ? Brightness.dark : Brightness.light,
         systemNavigationBarColor:
-            _isDark ? const Color(0xFF101014) : const Color(0xFFF4F1E8),
+            _isDark ? const Color(0xFF080B11) : const Color(0xFFF8FAFC),
         systemNavigationBarIconBrightness:
             _isDark ? Brightness.light : Brightness.dark,
       ),

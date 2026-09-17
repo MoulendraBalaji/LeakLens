@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Neo-Brutalism design system for LeakLens.
+/// Cyber-Security Obsidian & Glass design system for LeakLens.
 ///
-/// Raw, loud, confident. Thick hard borders, zero-blur offset shadows,
-/// flat high-chroma surfaces and heavy-weight type. No gradients, no glow,
-/// no glassmorphism — just hard edges and bold slabs.
+/// Blends deep OLED obsidian surfaces with electric security neon accents,
+/// crisp Plus Jakarta Sans typography, JetBrains Mono code rendering,
+/// refined 16px squircle curvature, and soft ambient elevations.
 @immutable
 class NeoColors extends ThemeExtension<NeoColors> {
   final Color background;
@@ -46,45 +46,45 @@ class NeoColors extends ThemeExtension<NeoColors> {
     required this.isDark,
   });
 
-  /// DARK palette — obsidian slabs, white borders, electric yellow shadows.
+  /// DARK palette — Deep OLED obsidian, frosted slate surfaces, cyber accents.
   static const NeoColors dark = NeoColors(
-    background: Color(0xFF101014),
-    surface: Color(0xFF1C1C23),
-    surfaceAlt: Color(0xFF26262E),
-    border: Color(0xFFF2F2F5),
-    shadow: Color(0xFFFFD400),
-    textBright: Color(0xFFFFFFFF),
-    textPrimary: Color(0xFFECECF0),
-    textSecondary: Color(0xFFA3A3AC),
-    textMuted: Color(0xFF71717B),
-    yellow: Color(0xFFFFD400),
-    cyan: Color(0xFF00E5FF),
-    green: Color(0xFF2BD860),
-    red: Color(0xFFFF4D4D),
-    orange: Color(0xFFFF9F1C),
-    blue: Color(0xFF4D9FFF),
-    magenta: Color(0xFFFF5CD8),
+    background: Color(0xFF080B11),
+    surface: Color(0xFF111726),
+    surfaceAlt: Color(0xFF182033),
+    border: Color(0xFF222F46),
+    shadow: Color(0x33000000),
+    textBright: Color(0xFFF8FAFC),
+    textPrimary: Color(0xFFE2E8F0),
+    textSecondary: Color(0xFF94A3B8),
+    textMuted: Color(0xFF64748B),
+    yellow: Color(0xFFF59E0B),
+    cyan: Color(0xFF06B6D4),
+    green: Color(0xFF10B981),
+    red: Color(0xFFF43F5E),
+    orange: Color(0xFFF97316),
+    blue: Color(0xFF38BDF8),
+    magenta: Color(0xFFA855F7),
     isDark: true,
   );
 
-  /// LIGHT palette — warm paper, punchy black borders, brutal black shadows.
+  /// LIGHT palette — Clean crisp studio slate, high-legibility surfaces.
   static const NeoColors light = NeoColors(
-    background: Color(0xFFF4F1E8),
+    background: Color(0xFFF8FAFC),
     surface: Color(0xFFFFFFFF),
-    surfaceAlt: Color(0xFFE9E6DA),
-    border: Color(0xFF0B0B0E),
-    shadow: Color(0xFF0B0B0E),
-    textBright: Color(0xFF0B0B0E),
-    textPrimary: Color(0xFF1B1B1F),
-    textSecondary: Color(0xFF4D4D57),
-    textMuted: Color(0xFF74747E),
-    yellow: Color(0xFFFFD400),
-    cyan: Color(0xFF00C2DE),
-    green: Color(0xFF24C35E),
-    red: Color(0xFFFF4D4D),
-    orange: Color(0xFFFF9F1C),
-    blue: Color(0xFF2F88FF),
-    magenta: Color(0xFFFF4FD0),
+    surfaceAlt: Color(0xFFF1F5F9),
+    border: Color(0xFFE2E8F0),
+    shadow: Color(0x0F0F172A),
+    textBright: Color(0xFF0F172A),
+    textPrimary: Color(0xFF1E293B),
+    textSecondary: Color(0xFF64748B),
+    textMuted: Color(0xFF94A3B8),
+    yellow: Color(0xFFD97706),
+    cyan: Color(0xFF0891B2),
+    green: Color(0xFF059669),
+    red: Color(0xFFE11D48),
+    orange: Color(0xFFEA580C),
+    blue: Color(0xFF2563EB),
+    magenta: Color(0xFF9333EA),
     isDark: false,
   );
 
@@ -157,15 +157,25 @@ class NeoColors extends ThemeExtension<NeoColors> {
   }
 }
 
-/// Static Neo-Brutalism tokens and helpers.
+/// Cyber Obsidian & Glass tokens and helpers.
 class NeoTheme {
   NeoTheme._();
 
-  static const double borderWidth = 2.5;
-  static const double radius = 0;
-  static const double innerRadius = 8;
-  static const Offset hardOffset = Offset(5, 5);
-  static const Offset hardOffsetLg = Offset(7, 7);
+  static const double borderWidth = 1.2;
+  static const double radius = 16.0;
+  static const double innerRadius = 10.0;
+  static const double pillRadius = 30.0;
+  static const Offset hardOffset = Offset(0, 4);
+  static const Offset hardOffsetLg = Offset(0, 8);
+
+  /// Brand Multi-color gradient
+  static const List<Color> multiColorGradient = [
+    Color(0xFF38BDF8),
+    Color(0xFF06B6D4),
+    Color(0xFF10B981),
+    Color(0xFFF59E0B),
+    Color(0xFFF43F5E),
+  ];
 
   /// Heavy display type for big statements.
   static TextStyle fontDisplay({
@@ -177,10 +187,10 @@ class NeoTheme {
   }) {
     return GoogleFonts.plusJakartaSans(
       fontSize: fontSize,
-      fontWeight: fontWeight ?? FontWeight.w900,
+      fontWeight: fontWeight ?? FontWeight.w800,
       color: color,
       height: height,
-      letterSpacing: letterSpacing,
+      letterSpacing: letterSpacing ?? -0.3,
     );
   }
 
@@ -222,12 +232,17 @@ class NeoTheme {
     );
   }
 
-  /// Default hard shell shadow (zero blur offset slab shadow).
+  /// Refined ambient elevation shadow.
   static BoxShadow hardShadow(Color color, {Offset offset = hardOffset}) {
-    return BoxShadow(color: color, offset: offset, blurRadius: 0);
+    return BoxShadow(
+      color: color.withValues(alpha: 0.18),
+      offset: offset,
+      blurRadius: 12,
+      spreadRadius: 0,
+    );
   }
 
-  /// The canonical neo-brutalist slab decoration.
+  /// Sleek squircle card decoration with subtle border and ambient elevation.
   static BoxDecoration slab(
     BuildContext context, {
     Color? color,
@@ -243,12 +258,18 @@ class NeoTheme {
       borderRadius: BorderRadius.circular(radius),
       border: Border.all(color: borderColor ?? c.border, width: width),
       boxShadow: [
-        if (raised) BoxShadow(color: c.shadow, offset: offset, blurRadius: 0),
+        if (raised)
+          BoxShadow(
+            color: c.shadow,
+            offset: offset,
+            blurRadius: 14,
+            spreadRadius: 0,
+          ),
       ],
     );
   }
 
-  /// Stamp-style sticker chip.
+  /// Refined pill chip with subtle accent tint.
   static Widget sticker(
     BuildContext context, {
     required String text,
@@ -256,43 +277,52 @@ class NeoTheme {
     Color? fg,
     IconData? icon,
     double fontSize = 11,
-    bool mono = true,
+    bool mono = false,
     VoidCallback? onTap,
-    EdgeInsets padding = const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    EdgeInsets padding = const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
   }) {
     final c = NeoColors.of(context);
-    final fill = color ?? c.yellow;
-    final ink = fg ?? c.border;
+    final accent = color ?? c.cyan;
+    final ink = fg ?? (c.isDark ? accent : accent);
+
     final content = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         if (icon != null) ...[
           Icon(icon, size: fontSize + 3, color: ink),
-          const SizedBox(width: 6),
+          const SizedBox(width: 5),
         ],
         Text(
           text,
           style: (mono ? fontMono : fontSans)(
             fontSize: fontSize,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
             color: ink,
-            letterSpacing: 0.3,
+            letterSpacing: 0.2,
           ),
         ),
       ],
     );
+
     final chip = Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: fill,
-        borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: c.border, width: 2),
-        boxShadow: [hardShadow(c.border, offset: const Offset(3, 3))],
+        color: accent.withValues(alpha: c.isDark ? 0.14 : 0.10),
+        borderRadius: BorderRadius.circular(pillRadius),
+        border: Border.all(
+          color: accent.withValues(alpha: c.isDark ? 0.38 : 0.28),
+          width: 1.1,
+        ),
       ),
       child: content,
     );
+
     if (onTap == null) return chip;
-    return GestureDetector(onTap: onTap, child: chip);
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: chip,
+    );
   }
 
   static ThemeData get darkTheme => _buildTheme(NeoColors.dark);
@@ -305,25 +335,25 @@ class NeoTheme {
     );
 
     final colorScheme = c.isDark
-        ? const ColorScheme.dark(
-            primary: Color(0xFFFFD400),
-            secondary: Color(0xFF00E5FF),
-            surface: Color(0xFF1C1C23),
-            error: Color(0xFFFF4D4D),
+        ? ColorScheme.dark(
+            primary: c.green,
+            secondary: c.cyan,
+            surface: c.surface,
+            error: c.red,
             onPrimary: Colors.black,
             onSecondary: Colors.black,
-            onSurface: Colors.white,
-            onError: Colors.black,
+            onSurface: c.textPrimary,
+            onError: Colors.white,
           )
-        : const ColorScheme.light(
-            primary: Color(0xFFFFD400),
-            secondary: Color(0xFF00C2DE),
-            surface: Colors.white,
-            error: Color(0xFFFF4D4D),
-            onPrimary: Colors.black,
-            onSecondary: Colors.black,
-            onSurface: Colors.black,
-            onError: Colors.black,
+        : ColorScheme.light(
+            primary: c.green,
+            secondary: c.cyan,
+            surface: c.surface,
+            error: c.red,
+            onPrimary: Colors.white,
+            onSecondary: Colors.white,
+            onSurface: c.textPrimary,
+            onError: Colors.white,
           );
 
     return ThemeData(
@@ -335,22 +365,22 @@ class NeoTheme {
       textTheme: baseText.copyWith(
         displayLarge: baseText.displayLarge?.copyWith(
           color: c.textBright,
-          fontWeight: FontWeight.w900,
-          letterSpacing: -0.8,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.6,
         ),
         headlineMedium: baseText.headlineMedium?.copyWith(
           color: c.textBright,
-          fontWeight: FontWeight.w800,
-          letterSpacing: -0.4,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.3,
         ),
         titleLarge: baseText.titleLarge?.copyWith(
           color: c.textBright,
-          fontWeight: FontWeight.w800,
-          letterSpacing: -0.3,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.2,
         ),
         titleMedium: baseText.titleMedium?.copyWith(
           color: c.textBright,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
         ),
         bodyLarge: baseText.bodyLarge?.copyWith(
           color: c.textPrimary,
@@ -364,7 +394,7 @@ class NeoTheme {
         ),
         labelLarge: baseText.labelLarge?.copyWith(
           color: c.textBright,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w600,
           letterSpacing: 0.2,
         ),
       ),
@@ -379,33 +409,37 @@ class NeoTheme {
         color: c.surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(0),
-          side: BorderSide(color: c.border, width: 2.5),
+          borderRadius: BorderRadius.circular(radius),
+          side: BorderSide(color: c.border, width: borderWidth),
         ),
       ),
-      dividerTheme: const DividerThemeData(
-        color: Colors.transparent,
+      dividerTheme: DividerThemeData(
+        color: c.border,
         thickness: 1,
         space: 1,
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: c.surfaceAlt,
-        elevation: 0,
-        contentTextStyle: fontSans(fontSize: 12.5, color: c.textBright),
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: c.border, width: 1),
+        ),
+        contentTextStyle: fontSans(fontSize: 13, color: c.textBright),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: c.surface,
+        backgroundColor: c.surfaceAlt,
         labelStyle: fontSans(
           fontSize: 11,
           color: c.textBright,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
         ),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(0),
-          side: BorderSide(color: c.border, width: 2),
+          borderRadius: BorderRadius.circular(pillRadius),
+          side: BorderSide(color: c.border, width: 1),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -413,28 +447,34 @@ class NeoTheme {
         hintStyle: fontMono(fontSize: 12, color: c.textMuted),
         contentPadding: const EdgeInsets.all(16),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(0),
-          borderSide: BorderSide(color: c.border, width: 2.5),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: c.border, width: borderWidth),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(0),
-          borderSide: BorderSide(color: c.border, width: 2.5),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: c.border, width: borderWidth),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(0),
-          borderSide: BorderSide(color: c.yellow, width: 3),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: c.cyan, width: 1.5),
         ),
       ),
       popupMenuTheme: PopupMenuThemeData(
         color: c.surface,
-        elevation: 0,
+        elevation: 8,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(0),
-          side: BorderSide(color: c.border, width: 2.5),
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: c.border, width: 1),
         ),
         textStyle: fontSans(fontSize: 13, color: c.textBright),
       ),
-      dialogTheme: DialogThemeData(backgroundColor: c.surface),
+      dialogTheme: DialogThemeData(
+        backgroundColor: c.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: c.border, width: 1),
+        ),
+      ),
     );
   }
 }
